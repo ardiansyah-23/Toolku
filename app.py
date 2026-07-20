@@ -80,29 +80,58 @@ elif menu == "Pengolah Gambar":
     if uploaded_files:
         target_format = st.selectbox("Pilih Format Output:", ["PNG", "JPEG", "WEBP"])
         quality = st.slider("Kualitas Kompresi (Untuk JPEG/WEBP):", 10, 100, 85)
-        custom_name = st.text_input("Nama file ZIP hasil unduhan:", value="processed_images")
+        
+        # Label dinamis tergantung jumlah file
+        is_single = len(uploaded_files) == 1
+        label_input = "Nama file hasil unduhan:" if is_single else "Nama file ZIP hasil unduhan:"
+        default_name = os.path.splitext(uploaded_files[0].name)[0] if is_single else "processed_images"
+        
+        custom_name = st.text_input(label_input, value=default_name, key="image_custom_name")
         
         if st.button("Proses Gambar"):
-            zip_buffer = io.BytesIO()
-            with zipfile.ZipFile(zip_buffer, "w") as zf:
-                for file in uploaded_files:
-                    img = Image.open(file)
-                    if target_format == "JPEG" and img.mode in ("RGBA", "P"):
-                        img = img.convert("RGB")
-                    
-                    output_io = io.BytesIO()
-                    img.save(output_io, format=target_format, quality=quality)
-                    
-                    file_name = os.path.splitext(file.name)[0] + f".{target_format.lower()}"
-                    zf.writestr(file_name, output_io.getvalue())
-            
-            final_zip_name = f"{custom_name.strip() or 'processed_images'}.zip"
-            st.download_button(
-                label="Unduh Semua Gambar (ZIP)",
-                data=zip_buffer.getvalue(),
-                file_name=final_zip_name,
-                mime="application/zip"
-            )
+            if is_single:
+                # Proses 1 file gambar tunggal
+                file = uploaded_files[0]
+                img = Image.open(file)
+                if target_format == "JPEG" and img.mode in ("RGBA", "P"):
+                    img = img.convert("RGB")
+                
+                output_io = io.BytesIO()
+                img.save(output_io, format=target_format, quality=quality)
+                
+                final_name = f"{custom_name.strip() or default_name}.{target_format.lower()}"
+                
+                # Tentukan mime type yang sesuai
+                mime_types = {"PNG": "image/png", "JPEG": "image/jpeg", "WEBP": "image/webp"}
+                
+                st.download_button(
+                    label=f"Unduh Gambar ({target_format})",
+                    data=output_io.getvalue(),
+                    file_name=final_name,
+                    mime=mime_types.get(target_format, "image/jpeg")
+                )
+            else:
+                # Proses banyak file menjadi ZIP
+                zip_buffer = io.BytesIO()
+                with zipfile.ZipFile(zip_buffer, "w") as zf:
+                    for file in uploaded_files:
+                        img = Image.open(file)
+                        if target_format == "JPEG" and img.mode in ("RGBA", "P"):
+                            img = img.convert("RGB")
+                        
+                        output_io = io.BytesIO()
+                        img.save(output_io, format=target_format, quality=quality)
+                        
+                        file_name = os.path.splitext(file.name)[0] + f".{target_format.lower()}"
+                        zf.writestr(file_name, output_io.getvalue())
+                
+                final_zip_name = f"{custom_name.strip() or 'processed_images'}.zip"
+                st.download_button(
+                    label="Unduh Semua Gambar (ZIP)",
+                    data=zip_buffer.getvalue(),
+                    file_name=final_zip_name,
+                    mime="application/zip"
+                )
 
 # 3. Manipulasi PDF
 elif menu == "Manipulasi PDF":

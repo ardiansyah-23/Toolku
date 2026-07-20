@@ -24,8 +24,6 @@ menu = st.sidebar.selectbox(
         "Konversi Dokumen & Data",
         "Pengolah & Upscale Gambar",
         "Manipulasi PDF",
-        "Kompresor PDF",             # <-- Tambahkan ini
-        "Kompres & Upscale Video",    # <-- Tambahkan ini
         "Pengganti Nama Massal",
         "OCR Cerdas"
     ]
@@ -239,91 +237,8 @@ elif menu == "Manipulasi PDF":
                     except Exception as e:
                         st.error(f"Format rentang halaman salah. Gunakan format seperti '1-3' atau '1,2,4'. Error: {e}")
                         
-# 4. Kompresor PDF
-elif menu == "Kompresor PDF":
-    st.header("📉 Kompresor & Optimasi PDF")
-    pdf_file = st.file_uploader("Unggah file PDF yang ingin dikompres", type=["pdf"])
-    
-    if pdf_file:
-        # Hitung ukuran file asli yang diunggah
-        original_size_bytes = pdf_file.size
-        original_size_mb = original_size_bytes / (1024 * 1024)
-        
-        reader = pypdf.PdfReader(pdf_file)
-        st.info(f"📊 **Info File Asli:** {len(reader.pages)} Halaman | Ukuran: **{original_size_mb:.2f} MB** ({original_size_bytes} bytes)")
-        
-        compression_level = st.selectbox(
-            "Pilih Level Optimasi:", 
-            [
-                "Standar (Optimasi Struktur Dokumen)", 
-                "Agresif (Kompres Content Streams + Struktur)"
-            ]
-        )
-        
-        custom_name = st.text_input("Nama file PDF terkompres:", value="compressed_document", key="compress_pdf_name")
-        
-        if st.button("Kompres PDF"):
-            with st.spinner("Sedang mengoptimalkan PDF..."):
-                writer = pypdf.PdfWriter()
-                for page in reader.pages:
-                    writer.add_page(page)
                 
-                writer.compress_identical_objects()
-                
-                if "Agresif" in compression_level:
-                    for page in writer.pages:
-                        page.compress_content_streams()
-                
-                output_io = io.BytesIO()
-                writer.write(output_io)
-                compressed_size_bytes = output_io.tell()
-                compressed_size_mb = compressed_size_bytes / (1024 * 1024)
-                
-                # Hitung persentase penghematan ukuran
-                if original_size_bytes > 0:
-                    diff_percent = ((original_size_bytes - compressed_size_bytes) / original_size_bytes) * 100
-                else:
-                    diff_percent = 0
-                
-                st.success("PDF berhasil dioptimalkan!")
-                
-                # Menampilkan laporan perbandingan ukuran secara transparan
-                col1, col2, col3 = st.columns(3)
-                col1.metric("Ukuran Asli", f"{original_size_mb:.2f} MB")
-                col2.metric("Ukuran Baru", f"{compressed_size_mb:.2f} MB", f"{diff_percent:.1f}%", delta_color="inverse")
-                col3.metric("Status", "Berhasil" if diff_percent >= 0 else "Optimal")
-                
-                st.download_button(
-                    "Unduh PDF Terkompres",
-                    data=output_io.getvalue(),
-                    file_name=f"{custom_name.strip() or 'compressed_document'}.pdf",
-                    mime="application/pdf"
-                )
-# 5. Kompres & Upscale Video
-elif menu == "Kompres & Upscale Video":
-    st.header("🎬 Kompres & Upscale Video")
-    video_file = st.file_uploader("Unggah file video (.mp4 / .mov / .avi)", type=["mp4", "mov", "avi"])
-    
-    if video_file:
-        video_action = st.selectbox("Pilih Aksi Video:", ["Kompres Ukuran Video", "Upscale Kualitas Video (Enhance Metadata)"])
-        custom_name = st.text_input("Nama file video hasil unduhan:", value="processed_video", key="video_custom_name")
-        
-        st.warning("Catatan: Pemrosesan video berjalan ringan di browser/cloud environment.")
-        
-        if st.button("Proses Video"):
-            with st.spinner("Memproses video..."):
-                video_bytes = video_file.read()
-                output_io = io.BytesIO(video_bytes)
-                
-                st.success("Video berhasil diproses!")
-                st.download_button(
-                    "Unduh Video Hasil",
-                    data=output_io.getvalue(),
-                    file_name=f"{custom_name.strip() or 'processed_video'}.mp4",
-                    mime="video/mp4"
-                )
-                
-# 6. Pengganti Nama Massal
+# 4. Pengganti Nama Massal
 elif menu == "Pengganti Nama Massal":
     st.header("🏷️ Pengganti Nama Massal (Batch Renamer)")
     uploaded_files = st.file_uploader("Unggah file yang ingin diubah namanya", accept_multiple_files=True)
@@ -346,7 +261,7 @@ elif menu == "Pengganti Nama Massal":
             mime="application/zip"
         )
 
-# 7. OCR Cerdas
+# 5. OCR Cerdas
 elif menu == "OCR Cerdas":
     st.header("🔍 OCR Cerdas (Ekstrak Teks dari Gambar)")
     uploaded_image = st.file_uploader("Unggah gambar berisi teks", type=["png", "jpg", "jpeg"])

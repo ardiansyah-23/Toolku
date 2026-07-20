@@ -40,12 +40,15 @@ if menu == "Konversi Dokumen & Data":
             df = pd.read_excel(uploaded_file)
             st.dataframe(df)
             
-            custom_name = st.text_input("Nama file hasil unduhan:", value="converted_data")
+            # Menggunakan key agar nilainya langsung tersinkronisasi secara real-time
+            custom_name = st.text_input("Nama file hasil unduhan:", value="converted_data", key="excel_to_csv_name")
             csv = df.to_csv(index=False).encode('utf-8')
+            
+            final_filename = f"{custom_name.strip() or 'converted_data'}.csv"
             st.download_button(
                 "Unduh Hasil CSV", 
                 data=csv, 
-                file_name=f"{custom_name.strip() or 'converted_data'}.csv", 
+                file_name=final_filename, 
                 mime="text/csv"
             )
             
@@ -55,15 +58,17 @@ if menu == "Konversi Dokumen & Data":
             df = pd.read_csv(uploaded_file)
             st.dataframe(df)
             
-            custom_name = st.text_input("Nama file hasil unduhan:", value="converted_data")
+            custom_name = st.text_input("Nama file hasil unduhan:", value="converted_data", key="csv_to_excel_name")
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 df.to_excel(writer, index=False, sheet_name='Sheet1')
             processed_data = output.getvalue()
+            
+            final_filename = f"{custom_name.strip() or 'converted_data'}.xlsx"
             st.download_button(
                 "Unduh Hasil Excel", 
                 data=processed_data, 
-                file_name=f"{custom_name.strip() or 'converted_data'}.xlsx", 
+                file_name=final_filename, 
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 

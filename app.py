@@ -163,15 +163,25 @@ elif menu == "Manipulasi PDF":
             total_pages = len(reader.pages)
             st.info(f"Total halaman dalam PDF: **{total_pages}**")
             
-            # Pilihan metode pemisahan (Halaman Tunggal atau Range)
+            # Pilihan metode pemisahan
             split_mode = st.radio("Pilih Mode Split:", ["Halaman Tunggal", "Rentang Halaman (Range)"])
             
             if split_mode == "Halaman Tunggal":
                 page_num = st.number_input("Pilih nomor halaman:", min_value=1, max_value=total_pages, value=1, key="single_page_num")
-                custom_name = st.text_input("Nama file hasil PDF:", value=f"page_{page_num}", key="single_split_name")
                 
-                # Preview teks/info halaman
-                st.write(f"Preview: Akan mengambil halaman ke-{page_num}")
+                # --- FITUR PREVIEW HALAMAN ---
+                with st.expander(f"👁️ Preview Konten Halaman {page_num}", expanded=True):
+                    try:
+                        preview_text = reader.pages[page_num - 1].extract_text()
+                        if preview_text.strip():
+                            st.text_area("Isi Teks Halaman Ini:", value=preview_text, height=150, disabled=True)
+                        else:
+                            st.warning("Halaman ini tidak mengandung teks yang bisa diekstrak (kemungkinan berupa gambar/scan murni).")
+                    except Exception as e:
+                        st.error(f"Gagal memuat preview: {e}")
+                # -----------------------------
+                
+                custom_name = st.text_input("Nama file hasil PDF:", value=f"page_{page_num}", key="single_split_name")
                 
                 if st.button("Proses & Unduh Halaman"):
                     writer = pypdf.PdfWriter()
@@ -196,7 +206,6 @@ elif menu == "Manipulasi PDF":
                     pages_to_extract = set()
                     
                     try:
-                        # Parsing string range (misal: "1-3, 5, 7-9")
                         parts = range_input.split(",")
                         for part in parts:
                             if "-" in part:
@@ -229,7 +238,7 @@ elif menu == "Manipulasi PDF":
                             st.warning("Rentang halaman tidak valid atau di luar batas total halaman.")
                     except Exception as e:
                         st.error(f"Format rentang halaman salah. Gunakan format seperti '1-3' atau '1,2,4'. Error: {e}")
-
+                        
 # 4. Pengganti Nama Massal
 elif menu == "Pengganti Nama Massal":
     st.header("🏷️ Pengganti Nama Massal (Batch Renamer)")

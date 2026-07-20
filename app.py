@@ -253,8 +253,13 @@ elif menu == "Kompresor PDF":
             with st.spinner("Sedang mengoptimalkan PDF..."):
                 writer = pypdf.PdfWriter()
                 for page in reader.pages:
-                    page.compress_content_streams()
+                    # Masukkan halaman ke writer terlebih dahulu
                     writer.add_page(page)
+                
+                # Kompres content streams pada halaman yang sudah ada di writer
+                writer.compress_identical_objects()
+                for page in writer.pages:
+                    page.compress_content_streams()
                 
                 output_io = io.BytesIO()
                 writer.write(output_io)

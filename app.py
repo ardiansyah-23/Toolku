@@ -143,7 +143,8 @@ elif menu == "Manipulasi PDF":
         if pdf_files:
             custom_name = st.text_input("Nama file PDF gabungan:", value="merged_document", key="merge_pdf_name")
             if st.button("Gabungkan PDF"):
-                merger = pypdf.PdfMerger()
+                # Menggunakan PdfWriter untuk menggabungkan file di pypdf versi baru
+                merger = pypdf.PdfWriter()
                 for pdf in pdf_files:
                     merger.append(pdf)
                 output_io = io.BytesIO()
@@ -163,13 +164,11 @@ elif menu == "Manipulasi PDF":
             total_pages = len(reader.pages)
             st.info(f"Total halaman dalam PDF: **{total_pages}**")
             
-            # Pilihan metode pemisahan
             split_mode = st.radio("Pilih Mode Split:", ["Halaman Tunggal", "Rentang Halaman (Range)"])
             
             if split_mode == "Halaman Tunggal":
                 page_num = st.number_input("Pilih nomor halaman:", min_value=1, max_value=total_pages, value=1, key="single_page_num")
                 
-                # --- FITUR PREVIEW HALAMAN ---
                 with st.expander(f"👁️ Preview Konten Halaman {page_num}", expanded=True):
                     try:
                         preview_text = reader.pages[page_num - 1].extract_text()
@@ -179,7 +178,6 @@ elif menu == "Manipulasi PDF":
                             st.warning("Halaman ini tidak mengandung teks yang bisa diekstrak (kemungkinan berupa gambar/scan murni).")
                     except Exception as e:
                         st.error(f"Gagal memuat preview: {e}")
-                # -----------------------------
                 
                 custom_name = st.text_input("Nama file hasil PDF:", value=f"page_{page_num}", key="single_split_name")
                 

@@ -173,7 +173,7 @@ elif menu == "OCR Cerdas":
     
     if uploaded_image:
         img = Image.open(uploaded_image)
-        st.image(img, caption="Gambar yang Diunggah", use_keyword_args=True) if hasattr(st, "image") else st.image(img, caption="Gambar yang Diunggah")
+        st.image(img, caption="Gambar yang Diunggah", use_container_width=True)
         
         custom_name = st.text_input("Nama file teks hasil OCR:", value="extracted_text")
         

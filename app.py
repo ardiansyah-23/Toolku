@@ -7,6 +7,10 @@ import io
 import os
 import zipfile
 
+# Konfigurasi explicit path Tesseract untuk Linux (Streamlit Cloud)
+if os.path.exists('/usr/bin/tesseract'):
+    pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
+
 # Konfigurasi Halaman
 st.set_page_config(page_title="Toolku", page_icon="🛠️", layout="wide")
 
@@ -143,8 +147,22 @@ elif menu == "OCR Cerdas":
         
         if st.button("Ekstrak Teks"):
             with st.spinner("Sedang memproses OCR..."):
-                extracted_text = pytesseract.image_to_string(img)
+                try:
+                    extracted_text = pytesseract.image_to_string(img)
+                except Exception as e:
+                    extracted_text = ""
+                    st.error(f"Gagal menjalankan OCR. Pastikan paket system Tesseract terinstal. Error: {e}")
             
-            st.subheader("Hasil Teks:")
-            st.text_area("Teks Terdeteksi:", extracted_text, height=200)
-            st.download_button("Unduh Teks (.txt)", data=extracted_text, file_name="extracted_text.txt", mime="text/plain")
+            if extracted_text.strip():
+                st.subheader("Hasil Teks:")
+                st.text_area("Teks Terdeteksi:", extracted_text, height=200)
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.download_button("📥 Unduh Teks (.txt)", data=extracted_text, file_name="extracted_text.txt", mime="text/plain")
+                with col2:
+                    if st.button("📋 Salin Teks"):
+                        st.toast("Teks berhasil disalin ke memori!", icon="✅")
+                        st.write(f'<script>navigator.clipboard.writeText(`{extracted_text}`);</script>', unsafe_allow_html=True)
+            else:
+                st.warning("Tidak ada teks yang berhasil dideteksi dari gambar tersebut. Coba gunakan gambar dengan resolusi yang lebih jelas.")

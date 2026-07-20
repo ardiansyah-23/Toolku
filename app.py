@@ -141,7 +141,7 @@ elif menu == "Manipulasi PDF":
     if pdf_menu == "Gabung PDF (Merge)":
         pdf_files = st.file_uploader("Unggah file PDF untuk digabungkan", type=["pdf"], accept_multiple_files=True)
         if pdf_files:
-            custom_name = st.text_input("Nama file PDF gabungan:", value="merged_document")
+            custom_name = st.text_input("Nama file PDF gabungan:", value="merged_document", key="merge_pdf_name")
             if st.button("Gabungkan PDF"):
                 merger = pypdf.PdfMerger()
                 for pdf in pdf_files:
@@ -160,22 +160,75 @@ elif menu == "Manipulasi PDF":
         pdf_file = st.file_uploader("Unggah satu file PDF untuk dipisah", type=["pdf"])
         if pdf_file:
             reader = pypdf.PdfReader(pdf_file)
-            st.write(f"Total halaman: {len(reader.pages)}")
-            page_num = st.number_input("Pilih nomor halaman yang ingin diambil:", min_value=1, max_value=len(reader.pages), value=1)
-            custom_name = st.text_input("Nama file halaman PDF:", value=f"page_{page_num}")
+            total_pages = len(reader.pages)
+            st.info(f"Total halaman dalam PDF: **{total_pages}**")
             
-            if st.button("Ambil Halaman"):
-                writer = pypdf.PdfWriter()
-                writer.add_page(reader.pages[page_num - 1])
-                output_io = io.BytesIO()
-                writer.write(output_io)
-                writer.close()
-                st.download_button(
-                    f"Unduh Halaman {page_num}", 
-                    data=output_io.getvalue(), 
-                    file_name=f"{custom_name.strip() or f'page_{page_num}'}.pdf", 
-                    mime="application/pdf"
-                )
+            # Pilihan metode pemisahan (Halaman Tunggal atau Range)
+            split_mode = st.radio("Pilih Mode Split:", ["Halaman Tunggal", "Rentang Halaman (Range)"])
+            
+            if split_mode == "Halaman Tunggal":
+                page_num = st.number_input("Pilih nomor halaman:", min_value=1, max_value=total_pages, value=1, key="single_page_num")
+                custom_name = st.text_input("Nama file hasil PDF:", value=f"page_{page_num}", key="single_split_name")
+                
+                # Preview teks/info halaman
+                st.write(f"Preview: Akan mengambil halaman ke-{page_num}")
+                
+                if st.button("Proses & Unduh Halaman"):
+                    writer = pypdf.PdfWriter()
+                    writer.add_page(reader.pages[page_num - 1])
+                    output_io = io.BytesIO()
+                    writer.write(output_io)
+                    writer.close()
+                    
+                    st.download_button(
+                        f"Unduh Halaman {page_num}", 
+                        data=output_io.getvalue(), 
+                        file_name=f"{custom_name.strip() or f'page_{page_num}'}.pdf", 
+                        mime="application/pdf"
+                    )
+                    
+            elif split_mode == "Rentang Halaman (Range)":
+                range_input = st.text_input("Masukkan rentang halaman (Contoh: 1-5 atau 1,3,5-7):", value="1-3", key="range_input_text")
+                custom_name = st.text_input("Nama file PDF hasil rentang:", value="split_document", key="range_split_name")
+                
+                if st.button("Proses & Unduh Rentang PDF"):
+                    writer = pypdf.PdfWriter()
+                    pages_to_extract = set()
+                    
+                    try:
+                        # Parsing string range (misal: "1-3, 5, 7-9")
+                        parts = range_input.split(",")
+                        for part in parts:
+                            if "-" in part:
+                                start, end = map(int, part.split("-"))
+                                for p in range(start, end + 1):
+                                    if 1 <= p <= total_pages:
+                                        pages_to_extract.add(p - 1)
+                            else:
+                                p = int(part.strip())
+                                if 1 <= p <= total_pages:
+                                    pages_to_extract.add(p - 1)
+                        
+                        sorted_pages = sorted(list(pages_to_extract))
+                        
+                        if sorted_pages:
+                            for idx in sorted_pages:
+                                writer.add_page(reader.pages[idx])
+                            
+                            output_io = io.BytesIO()
+                            writer.write(output_io)
+                            writer.close()
+                            
+                            st.download_button(
+                                "Unduh PDF Berdasarkan Rentang",
+                                data=output_io.getvalue(),
+                                file_name=f"{custom_name.strip() or 'split_document'}.pdf",
+                                mime="application/pdf"
+                            )
+                        else:
+                            st.warning("Rentang halaman tidak valid atau di luar batas total halaman.")
+                    except Exception as e:
+                        st.error(f"Format rentang halaman salah. Gunakan format seperti '1-3' atau '1,2,4'. Error: {e}")
 
 # 4. Pengganti Nama Massal
 elif menu == "Pengganti Nama Massal":

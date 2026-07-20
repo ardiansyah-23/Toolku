@@ -39,19 +39,33 @@ if menu == "Konversi Dokumen & Data":
         if uploaded_file is not None:
             df = pd.read_excel(uploaded_file)
             st.dataframe(df)
+            
+            custom_name = st.text_input("Nama file hasil unduhan:", value="converted_data")
             csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button("Unduh Hasil CSV", data=csv, file_name="converted.csv", mime="text/csv")
+            st.download_button(
+                "Unduh Hasil CSV", 
+                data=csv, 
+                file_name=f"{custom_name.strip() or 'converted_data'}.csv", 
+                mime="text/csv"
+            )
             
     elif sub_menu == "CSV ke Excel":
         uploaded_file = st.file_uploader("Unggah file CSV (.csv)", type=["csv"])
         if uploaded_file is not None:
             df = pd.read_csv(uploaded_file)
             st.dataframe(df)
+            
+            custom_name = st.text_input("Nama file hasil unduhan:", value="converted_data")
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 df.to_excel(writer, index=False, sheet_name='Sheet1')
             processed_data = output.getvalue()
-            st.download_button("Unduh Hasil Excel", data=processed_data, file_name="converted.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            st.download_button(
+                "Unduh Hasil Excel", 
+                data=processed_data, 
+                file_name=f"{custom_name.strip() or 'converted_data'}.xlsx", 
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
 # 2. Pengolah Gambar
 elif menu == "Pengolah Gambar":
@@ -61,6 +75,7 @@ elif menu == "Pengolah Gambar":
     if uploaded_files:
         target_format = st.selectbox("Pilih Format Output:", ["PNG", "JPEG", "WEBP"])
         quality = st.slider("Kualitas Kompresi (Untuk JPEG/WEBP):", 10, 100, 85)
+        custom_name = st.text_input("Nama file ZIP hasil unduhan:", value="processed_images")
         
         if st.button("Proses Gambar"):
             zip_buffer = io.BytesIO()
@@ -76,10 +91,11 @@ elif menu == "Pengolah Gambar":
                     file_name = os.path.splitext(file.name)[0] + f".{target_format.lower()}"
                     zf.writestr(file_name, output_io.getvalue())
             
+            final_zip_name = f"{custom_name.strip() or 'processed_images'}.zip"
             st.download_button(
                 label="Unduh Semua Gambar (ZIP)",
                 data=zip_buffer.getvalue(),
-                file_name="processed_images.zip",
+                file_name=final_zip_name,
                 mime="application/zip"
             )
 
@@ -90,14 +106,21 @@ elif menu == "Manipulasi PDF":
     
     if pdf_menu == "Gabung PDF (Merge)":
         pdf_files = st.file_uploader("Unggah file PDF untuk digabungkan", type=["pdf"], accept_multiple_files=True)
-        if pdf_files and st.button("Gabungkan PDF"):
-            merger = pypdf.PdfMerger()
-            for pdf in pdf_files:
-                merger.append(pdf)
-            output_io = io.BytesIO()
-            merger.write(output_io)
-            merger.close()
-            st.download_button("Unduh PDF Gabungan", data=output_io.getvalue(), file_name="merged.pdf", mime="application/pdf")
+        if pdf_files:
+            custom_name = st.text_input("Nama file PDF gabungan:", value="merged_document")
+            if st.button("Gabungkan PDF"):
+                merger = pypdf.PdfMerger()
+                for pdf in pdf_files:
+                    merger.append(pdf)
+                output_io = io.BytesIO()
+                merger.write(output_io)
+                merger.close()
+                st.download_button(
+                    "Unduh PDF Gabungan", 
+                    data=output_io.getvalue(), 
+                    file_name=f"{custom_name.strip() or 'merged_document'}.pdf", 
+                    mime="application/pdf"
+                )
             
     elif pdf_menu == "Pisah PDF (Split)":
         pdf_file = st.file_uploader("Unggah satu file PDF untuk dipisah", type=["pdf"])
@@ -105,6 +128,7 @@ elif menu == "Manipulasi PDF":
             reader = pypdf.PdfReader(pdf_file)
             st.write(f"Total halaman: {len(reader.pages)}")
             page_num = st.number_input("Pilih nomor halaman yang ingin diambil:", min_value=1, max_value=len(reader.pages), value=1)
+            custom_name = st.text_input("Nama file halaman PDF:", value=f"page_{page_num}")
             
             if st.button("Ambil Halaman"):
                 writer = pypdf.PdfWriter()
@@ -112,7 +136,12 @@ elif menu == "Manipulasi PDF":
                 output_io = io.BytesIO()
                 writer.write(output_io)
                 writer.close()
-                st.download_button(f"Unduh Halaman {page_num}", data=output_io.getvalue(), file_name=f"page_{page_num}.pdf", mime="application/pdf")
+                st.download_button(
+                    f"Unduh Halaman {page_num}", 
+                    data=output_io.getvalue(), 
+                    file_name=f"{custom_name.strip() or f'page_{page_num}'}.pdf", 
+                    mime="application/pdf"
+                )
 
 # 4. Pengganti Nama Massal
 elif menu == "Pengganti Nama Massal":
@@ -120,6 +149,7 @@ elif menu == "Pengganti Nama Massal":
     uploaded_files = st.file_uploader("Unggah file yang ingin diubah namanya", accept_multiple_files=True)
     
     prefix = st.text_input("Prefix (Awalan nama baru):", value="file_")
+    custom_name = st.text_input("Nama file ZIP hasil unduhan:", value="renamed_files")
     
     if uploaded_files and st.button("Proses Ganti Nama"):
         zip_buffer = io.BytesIO()
@@ -132,7 +162,7 @@ elif menu == "Pengganti Nama Massal":
         st.download_button(
             label="Unduh File Ter-rename (ZIP)",
             data=zip_buffer.getvalue(),
-            file_name="renamed_files.zip",
+            file_name=f"{custom_name.strip() or 'renamed_files'}.zip",
             mime="application/zip"
         )
 
@@ -143,7 +173,9 @@ elif menu == "OCR Cerdas":
     
     if uploaded_image:
         img = Image.open(uploaded_image)
-        st.image(img, caption="Gambar yang Diunggah", use_container_width=True)
+        st.image(img, caption="Gambar yang Diunggah", use_keyword_args=True) if hasattr(st, "image") else st.image(img, caption="Gambar yang Diunggah")
+        
+        custom_name = st.text_input("Nama file teks hasil OCR:", value="extracted_text")
         
         if st.button("Ekstrak Teks"):
             with st.spinner("Sedang memproses OCR..."):
@@ -155,14 +187,13 @@ elif menu == "OCR Cerdas":
             
             if extracted_text.strip():
                 st.subheader("Hasil Teks:")
-                st.text_area("Teks Terdeteksi:", extracted_text, height=200)
+                st.code(extracted_text, language="text")
                 
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.download_button("📥 Unduh Teks (.txt)", data=extracted_text, file_name="extracted_text.txt", mime="text/plain")
-                with col2:
-                    if st.button("📋 Salin Teks"):
-                        st.toast("Teks berhasil disalin ke memori!", icon="✅")
-                        st.write(f'<script>navigator.clipboard.writeText(`{extracted_text}`);</script>', unsafe_allow_html=True)
+                st.download_button(
+                    label="📥 Unduh Teks (.txt)", 
+                    data=extracted_text, 
+                    file_name=f"{custom_name.strip() or 'extracted_text'}.txt", 
+                    mime="text/plain"
+                )
             else:
                 st.warning("Tidak ada teks yang berhasil dideteksi dari gambar tersebut. Coba gunakan gambar dengan resolusi yang lebih jelas.")

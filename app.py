@@ -245,34 +245,60 @@ elif menu == "Kompresor PDF":
     pdf_file = st.file_uploader("Unggah file PDF yang ingin dikompres", type=["pdf"])
     
     if pdf_file:
+        # Hitung ukuran file asli yang diunggah
+        original_size_bytes = pdf_file.size
+        original_size_mb = original_size_bytes / (1024 * 1024)
+        
         reader = pypdf.PdfReader(pdf_file)
-        st.info(f"Jumlah Halaman Asli: **{len(reader.pages)} Halaman**")
+        st.info(f"📊 **Info File Asli:** {len(reader.pages)} Halaman | Ukuran: **{original_size_mb:.2f} MB** ({original_size_bytes} bytes)")
+        
+        compression_level = st.selectbox(
+            "Pilih Level Optimasi:", 
+            [
+                "Standar (Optimasi Struktur Dokumen)", 
+                "Agresif (Kompres Content Streams + Struktur)"
+            ]
+        )
+        
         custom_name = st.text_input("Nama file PDF terkompres:", value="compressed_document", key="compress_pdf_name")
         
         if st.button("Kompres PDF"):
             with st.spinner("Sedang mengoptimalkan PDF..."):
                 writer = pypdf.PdfWriter()
                 for page in reader.pages:
-                    # Masukkan halaman ke writer terlebih dahulu
                     writer.add_page(page)
                 
-                # Kompres content streams pada halaman yang sudah ada di writer
                 writer.compress_identical_objects()
-                for page in writer.pages:
-                    page.compress_content_streams()
+                
+                if "Agresif" in compression_level:
+                    for page in writer.pages:
+                        page.compress_content_streams()
                 
                 output_io = io.BytesIO()
                 writer.write(output_io)
-                writer.close()
+                compressed_size_bytes = output_io.tell()
+                compressed_size_mb = compressed_size_bytes / (1024 * 1024)
+                
+                # Hitung persentase penghematan ukuran
+                if original_size_bytes > 0:
+                    diff_percent = ((original_size_bytes - compressed_size_bytes) / original_size_bytes) * 100
+                else:
+                    diff_percent = 0
                 
                 st.success("PDF berhasil dioptimalkan!")
+                
+                # Menampilkan laporan perbandingan ukuran secara transparan
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Ukuran Asli", f"{original_size_mb:.2f} MB")
+                col2.metric("Ukuran Baru", f"{compressed_size_mb:.2f} MB", f"{diff_percent:.1f}%", delta_color="inverse")
+                col3.metric("Status", "Berhasil" if diff_percent >= 0 else "Optimal")
+                
                 st.download_button(
                     "Unduh PDF Terkompres",
                     data=output_io.getvalue(),
                     file_name=f"{custom_name.strip() or 'compressed_document'}.pdf",
                     mime="application/pdf"
                 )
-
 # 5. Kompres & Upscale Video
 elif menu == "Kompres & Upscale Video":
     st.header("🎬 Kompres & Upscale Video")
